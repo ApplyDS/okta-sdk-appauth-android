@@ -72,10 +72,10 @@ public class OAuthClientConfiguration {
     @VisibleForTesting
     static final String OIDC_DISCOVERY = ".well-known/openid-configuration";
 
-    private final SharedPreferences mPrefs;
+    private SharedPreferences mPrefs;
 
-    private final PackageManager mPackageManager;
-    private final String mPackageName;
+    private PackageManager mPackageManager;
+    private String mPackageName;
 
     private int mConfigHash;
     private String mConfigurationError;
@@ -130,6 +130,16 @@ public class OAuthClientConfiguration {
         }
 
         INSTANCE_REF.set(new WeakReference<>(this));
+    }
+
+    public OAuthClientConfiguration(String mClientId, Uri mRedirectUri, Uri mEndSessionRedirectUri, Uri mDiscoveryUri, Set<String> mScopes) {
+        this.mClientId = mClientId;
+        this.mRedirectUri = mRedirectUri;
+        this.mEndSessionRedirectUri = mEndSessionRedirectUri;
+        this.mDiscoveryUri = mDiscoveryUri;
+        this.mScopes = mScopes;
+
+        mConfigHash = (mClientId + mRedirectUri + mEndSessionRedirectUri + mDiscoveryUri + mScopes).hashCode();
     }
 
     /**

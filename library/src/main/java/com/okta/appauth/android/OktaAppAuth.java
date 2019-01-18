@@ -76,7 +76,7 @@ public class OktaAppAuth {
 
     protected AtomicReference<AuthorizationService> mAuthService = new AtomicReference<>();
     protected final AuthStateManager mAuthStateManager;
-    protected final OAuthClientConfiguration mConfiguration;
+    protected OAuthClientConfiguration mConfiguration;
 
     protected final AtomicReference<OktaAuthListener> mInitializationListener =
             new AtomicReference<>();
@@ -99,9 +99,13 @@ public class OktaAppAuth {
      */
     @AnyThread
     public static OktaAppAuth getInstance(@NonNull Context context) {
+        return getInstance(context, true);
+    }
+
+    public static OktaAppAuth getInstance(@NonNull Context context, boolean fromJson) {
         OktaAppAuth oktaAppAuth = INSTANCE_REF.get().get();
         if (oktaAppAuth == null) {
-            oktaAppAuth = new OktaAppAuth(context.getApplicationContext());
+            oktaAppAuth = new OktaAppAuth(context.getApplicationContext(), fromJson);
             INSTANCE_REF.set(new WeakReference<>(oktaAppAuth));
         }
 
@@ -115,10 +119,16 @@ public class OktaAppAuth {
      */
     @AnyThread
     protected OktaAppAuth(Context context) {
+        this(context, true);
+    }
+
+    protected OktaAppAuth(Context context, boolean fromJson) {
         mContext = context.getApplicationContext();
         mExecutor = Executors.newSingleThreadExecutor();
         mAuthStateManager = AuthStateManager.getInstance(mContext);
-        mConfiguration = OAuthClientConfiguration.getInstance(mContext);
+        if (fromJson) {
+            mConfiguration = OAuthClientConfiguration.getInstance(mContext);
+        }
     }
 
     /**
@@ -208,18 +218,18 @@ public class OktaAppAuth {
                     doRevoke(
                             mAuthStateManager.getCurrent().getRefreshToken(),
                             new OktaRevokeListener() {
-                            @Override
-                            public void onSuccess() {
+                                @Override
+                                public void onSuccess() {
                                     doRevoke(mAuthStateManager
                                                     .getCurrent().getAccessToken(),
                                             listener);
-                            }
+                                }
 
-                            @Override
-                            public void onError(AuthorizationException ex) {
+                                @Override
+                                public void onError(AuthorizationException ex) {
                                     listener.onError(ex);
-                            }
-                        });
+                                }
+                            });
                 }
             });
         } else {
@@ -582,6 +592,10 @@ public class OktaAppAuth {
         return Tokens.fromAuthState(mAuthStateManager.getCurrent());
     }
 
+    public void setConfiguration(OAuthClientConfiguration configuration) {
+        mConfiguration = configuration;
+    }
+
     @WorkerThread
     private void doInit(final Context context, final OktaAuthListener listener) {
         mInitializationListener.set(listener);
@@ -773,7 +787,7 @@ public class OktaAppAuth {
 
         createAuthorizationServiceIfNeeded()
                 .performEndOfSessionRequest(request, completionIntent,
-                cancelIntent, endSessionIntent);
+                        cancelIntent, endSessionIntent);
     }
 
     @WorkerThread
